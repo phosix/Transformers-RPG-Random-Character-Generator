@@ -1,0 +1,336 @@
+#!/bin/bash
+################################################################################
+# A simple random character generator for the Transformers RPG game
+# Created by Edward "Xiphos" Fuhr, Jan 21, 2023
+# Distributed under the Creative Commons license CC BY - Anyone is free to use
+# this code for any reason, including but not limited to: personal use,
+# commercial use, the basis of derivative works (even distributing the derived
+# work under an alternate license). I ask only my work be acknowledged as the
+# basis of derivatives.
+################################################################################
+# Character's base statistics, skills, Influence, Origin and Role, as well as
+# all options of each, are randomly selected and assigned. Skills that can be
+# selected for specialization by role have a 50% chance of being selected for
+# specialization.
+#
+# All characters get one Influence, with a 50% chance of selecting two
+# influences, and a 1-in-3 chance of selecting three influences, gaining the
+# appropriate number of Hangups, also chosen at random.
+#
+# Some very interesting characters can be expected to be generated in this way.
+################################################################################
+
+################################################################################
+# Functions used to streamline the code
+################################################################################
+# A basic randomizer function to pick a random element from a provided list
+Rando() {
+	local a=($@)
+	printf '%s' ${a[((RANDOM % ${#a[@]}))]}
+}
+
+# Tally all values of the provided list
+Tally () {
+	local v
+	local t=0
+	for v in $@ ; do
+		if [ ${!v} ] ; then
+		  ((t += ${!v}))
+		fi
+	done
+	printf "%d" ${t}
+}
+
+# Decide if a skill should be Trained in or Specialized in.
+# 50/50 chance for specialization if the skill has already been selected for
+# training. If the skill has NOT been selected for training prior to calling
+# this function then a single point of training is added, with no chance of
+# specializing.
+TrorSp () {
+	local Skill=$(Rando ${@})
+	if ((RANDOM % 2)) ; then
+		if [ "${!Skill}" ] ; then
+			case ${Skill} in
+				conditioning)	((${Skill}++));;
+				initiative)	((${Skill}++));;
+	 			*)		SpSkill+=("${Skill}");;
+			esac
+		else
+			((${Skill}++))
+		fi
+	else
+		((${Skill}++))
+	fi
+}
+
+################################################################################
+# Lists and variables used to generate the characters
+################################################################################
+Influences=(beaurocrat cube_player experiment former_senator gladiator hunter inventor machinist racer scavenger security war_veteran)
+
+HangUps=(distressed earthspoiled glacial idolizer impulsive mode_attachment skeptical subordinate treacherous vainglorious violent whimsical)
+
+Origins=(champion cutter lookout monolith outrider rainmaker seeker support)
+
+Roles=(analyst field_commander gunner modemaster scientist scout warrior)
+
+asize=(small common large huge gigantic towering titanic)
+bsize=(small common long extended extended_ii extended_iii titanic)
+
+Essence=(st sp sm so)
+st=1
+sp=1
+sm=1
+so=1
+
+Health=0
+Hardpoints=4
+
+stS=(athletics brawn conditioning intimidation might)
+spS=(acrobatics driving finesse infiltration initiative)
+smS=(alertness culture science survival technology)
+soS=(animal_handling deception performance persuasion streetwise)
+Skills=(${stS[@]} ${spS[@]} ${smS[@]} ${soS[@]})
+
+################################################################################
+# The main event starts here.
+################################################################################
+# Randomly assign the base 12 points every character gets.
+total=0
+while [ ${total} -lt 12 ] ; do
+	(($(Rando "st sp sm so")++))
+	((total=${st}+${sp}+${sm}+${so}))
+done
+
+# Randomly select from 1 to 3 Influences.
+# Every character gets at elast one influence.
+# 50% chance of having two Influences.
+# 33% chance of getting a third Influence.
+# Hangups are randomly selected.
+Inf=( $(Rando ${Influences[@]}) )
+Influences=$(echo $Influences[@] | grep -v ${Inf})
+Inf+=( ${Influences[`expr $RANDOM % \( ${#Influences[@]} \* 2 \)`]} )
+if [[ ${Inf[1]} ]] ; then
+	CHangUp=( $(Rando ${HangUps[@]}) )
+	Inf+=( ${Influences[`expr $RANDOM % \( ${#Influences[@]} \* 3 \)`]} )
+	if [[ ${Inf[2]} ]] ; then
+		CHangUp+=( $(Rando ${HangUps[@]}) )
+	fi
+fi
+
+# Randomly select characters starter skills
+Tally=0
+for stat in st sp sm so ; do
+	Tally=$(Tally $(eval "echo \${${stat}S[@]}") )
+	while [ ${Tally} -lt ${!stat} ] ; do
+		(($(Rando $(eval "echo \${${stat}S[@]}") )++))
+		Tally=$(Tally $(eval "echo \${${stat}S[@]}") )
+	done
+done
+
+# Randomly assign an Origin
+COr=$(Rando ${Origins[@]})
+
+# Apply Origin modifiers, randomly picking from the options
+case ${COr} in
+	champion)	((so++))
+			(($(Rando "persuasion streetwise")++))
+			Health=3
+			BMove=40
+			BSize=2
+			AMove=60
+			ASize=${BSize}
+			Crew=2
+			FirePoints=2 ;;
+	cutter)		((st++))
+			(($(Rando "athletics might")++))
+			Health=3
+			BMove=30
+			BSize=$(Rando "1 2")
+			AMove=45
+			ASize=${BSize}
+			Crew=2
+			Firepoints=2 ;;
+	lookout)	Ess=$(Rando "sp so")
+			((${Ess}++))
+			if [ "${Ess}" == "sp" ] ; then (($(Rando "finesse infiltration")++))
+			else (($(Rando "deception streetwise")++)) ; fi
+			Health=2
+			((Evasion+=2))
+			BMove=30
+			BSize=1
+			AMove=45
+			ASize=${BSize}
+			Crew=1
+			Firepoints=1 ;;
+	monolith)	((st++))
+			(($(Rando "brawn might")++))
+			Health=4
+			BMove=20
+			BSize=3
+			AMove=45
+			ASize=${BSize}
+			Crew=6
+			Firepoints=4 ;;
+	outrider)	((sm++))
+			(($(Rando "alertness survival")++))
+			Health=3
+			BMove=30
+			BSize=$(Rando "1 2")
+			AMove=45
+			ASize=${BSize}
+			Crew=2
+			Firepoints=2 ;;
+	rainmaker)	((sp++))
+			(($(Rando "initiative targeting")++))
+			Health=4
+			BMove=30
+			BSize=2
+			AMove=45
+			ASize=${BSize}
+			Crew=2
+			Firepoints=2 ;;
+	seeker)		((sp++))
+			(($(Rando "acrobatics driving")++))
+			Health=3
+			BMove=30
+			BSize=2
+			AMove=60
+			ASize=${BSize}
+			Crew=2
+			Firepoints=0 ;;
+	support)	((sm++))
+			(($(Rando "science technology")++))
+			Health=4
+			BMove=30
+			BSize=2
+			AMove=(45 30)
+			ASize=2
+			Crew=2
+			Firepoints=2 ;;
+	*)		printf "Something went horribly wrong!\n"
+			exit1 ;;
+esac
+
+# Randomly pick a Role
+CRo=$(Rando ${Roles[@]})
+
+# Apply Role modifiers and randomly pick from available options.
+case ${CRo} in
+	analyst)	((sp++))
+			((sm++))
+			(($(Rando "finesse infiltration initiative")++))
+			(($(Rando "alertness science technology")++))
+			CFoc=$(Rando manipulator spec_ops)
+			((so++))
+			TrorSp deception persuasion streetwise;;
+	field_commander) ((st++))
+			((so++))
+			(($(Rando "brawn intimidation might")++))
+			(($(Rando "deception performance persuasion")++))
+			CFoc=$(Rando ambassador strategist)
+			case ${CFoc} in
+				ambassador)	((so++))
+						TrorSp deception performance persuasion;;
+				strategist)	((sm++))
+						TrorSp alertness culture survival;;
+			esac;;
+	gunner)		((sp++))
+			((sm++))
+			(($(Rando initiative targeting)++))
+			(($(Rando alertness survival)++))
+			CFoc=$(Rando gunslinger shapshooter)
+			((sp++))
+			case ${CFoc} in
+				gunslinger)	TrorSp acrobatics initiative targeting;;
+				sharshooter)	TrorSp infiltration initiative
+						CEqu+=(long_range_rifle);;
+			esac;;
+	modemaster)	E1=$(Rando st sp sm so)
+			E2=$(Rando st sp sm so)
+			while [ "${E1}" == "${E2}" ] ; do E2=$(Rando st sp sm so) ; done
+			((${E1}++))
+			(($(Rando $(eval "echo \${${E1}S[@]}") )++))
+			((${E2}++))
+			(($(Rando $(eval "echo \${${E2}S[@]}") )++))
+			CFoc=$(Rando microlinked triple_changer)
+			E1=$(Rando st sp sm so)
+			((${E1}++))
+			TrorSp $(eval "echo \${${E1}S[@]}")
+			case ${CFoc} in
+				microlinked)	;;
+				triple_changer)	CAm+=("");;
+			esac;;
+	scientist)	((st++))
+			((sm++))
+			(($(Rando brawn conditioning)++))
+			(($(Rando science technology)++))
+			CFoc=$(Rando medical_officer gadgeteer)
+			((sm++))
+			case ${CFoc} in
+				medical_officer) TrorSp science technology;;
+				gadgeteer)	TrorSp technology;;
+			esac;;
+	scout)		((sp++))
+			((so++))
+			(($(Rando infiltration initiative)++))
+			(($(Rando alertness deception streetwise)++))
+			CFoc=$(Rando outrider prowler)
+			((sp++))
+			case ${CFoc} in
+				outrider)	TrorSp driving initiative;;
+				prowler)	TrorSp finesse infiltration targeting;;
+			esac;;
+	warrior)	((st++))
+			((sm++))
+			(($(Rando brawn conditioning might)++))
+			(($(Rando alertness culture survival)++))
+			CFoc=$(Rando sentinel wrecker)
+			case ${CFoc} in
+				sentinel)	((sp++))
+						TrorSp finesse initiative;;
+				wrecker)	((st++))
+						TrorSp brawn conditioning might;;
+			esac;;
+	*)		printf "Something went horribly wrong!\n"
+			exit 1;;
+esac
+
+# Apply Conditioning bonus to Health
+if [ ${conditioning} ] ; then
+	((Health+=${conditioning}))
+fi
+
+# Tag skills that have been specialized in
+
+# Print out the character information
+printf "Influence"
+if [ ${#Inf[@]} -gt 1 ] ; then
+	printf "s:"
+	printf ", %s" ${Inf[@]^} | sed -e 's/^,//' -e 's/_/ /g'
+	printf "\nHangups:"
+	printf ", %s" ${CHangUp[@]^} | sed -e 's/^,//' -e 's/_/ /g'
+else
+	printf ": %s" ${Inf[@]^} | sed -e 's/_/ /g'
+fi
+printf "\n"
+printf "Origin: %s\n" ${COr^}
+printf "Role: %s (%s)\n\n" ${CRo^} ${CFoc} | sed -e 's/_/ /g'
+printf "Strength: %d\nSpeed: %d\nSmarts: %d\nSocial: %d\n" ${st} ${sp} ${sm} ${so}
+printf "Health: %d\n" ${Health}
+printf "Toughness: %d	" $(expr ${st} + 10)
+printf "Evasion: %d	" $(expr ${sp} + 10)
+printf "Willpower: %d	" $(expr ${sm} + 10)
+printf "Cleverness: %d\n" $(expr ${so} + 10)
+printf "\nSkills:\n"
+for skill in ${Skills[@]} ; do
+	if [ ${!skill} ] ; then
+		printf "	%s: %s" ${skill} ${!skill}
+		if [ $(echo ${SpSkill[@]} | grep ${skill}) ] ; then
+			for spsk in ${SpSkill[@]} ; do
+				if [ ${skill} == ${spsk} ] ; then echo -n '*' ; fi
+			done
+		fi
+		printf "\n"
+	fi
+done
