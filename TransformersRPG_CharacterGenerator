@@ -74,8 +74,8 @@ Origins=(champion cutter lookout monolith outrider rainmaker seeker support)
 
 Roles=(analyst field_commander gunner modemaster scientist scout warrior)
 
-asize=(small common large huge gigantic towering titanic)
-bsize=(small common long extended extended_ii extended_iii titanic)
+bsize=(small common large huge gigantic towering titanic)
+asize=(small common long extended extended_ii extended_iii titanic)
 
 Essence=(st sp sm so)
 st=1
@@ -314,7 +314,7 @@ else
 	printf ": %s" ${Inf[@]^} | sed -e 's/_/ /g'
 fi
 printf "\n"
-printf "Origin: %s\n" ${COr^}
+printf "Origin: %s	Size: %s/%s\n" ${COr^} ${bsize[${BSize}]} ${asize[${ASize}]}
 printf "Role: %s (%s)\n\n" ${CRo^} ${CFoc} | sed -e 's/_/ /g'
 printf "Strength: %d\nSpeed: %d\nSmarts: %d\nSocial: %d\n" ${st} ${sp} ${sm} ${so}
 printf "Health: %d\n" ${Health}
