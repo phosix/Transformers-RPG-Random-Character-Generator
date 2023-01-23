@@ -92,6 +92,11 @@ smS=(alertness culture science survival technology)
 soS=(animal_handling deception performance persuasion streetwise)
 Skills=(${stS[@]} ${spS[@]} ${smS[@]} ${soS[@]})
 
+Toughness=10
+Evasion=10
+Willpower=10
+Cleverness=10
+
 ################################################################################
 # The main event starts here.
 ################################################################################
@@ -108,15 +113,37 @@ done
 # 33% chance of getting a third Influence.
 # Hangups are randomly selected.
 Inf=( $(Rando ${Influences[@]}) )
-Influences=$(echo $Influences[@] | grep -v ${Inf})
+Influences=($(eval echo ${Influences[@]} | sed -e s/${Inf[0]}//) )
 Inf+=( ${Influences[`expr $RANDOM % \( ${#Influences[@]} \* 2 \)`]} )
 if [[ ${Inf[1]} ]] ; then
+	Influences=($(eval echo ${Influences[@]} | sed -e s/${Inf[1]}//) )
 	CHangUp=( $(Rando ${HangUps[@]}) )
 	Inf+=( ${Influences[`expr $RANDOM % \( ${#Influences[@]} \* 3 \)`]} )
 	if [[ ${Inf[2]} ]] ; then
+		HangUps=($(eval echo ${HangUps[@]} | sed -e s/${CHangUp[0]}//) )
 		CHangUp+=( $(Rando ${HangUps[@]}) )
 	fi
 fi
+
+# Collect and apply perks of each influence
+for inf in ${Inf[@]} ; do
+	case ${inf} in
+	former_senator)	SpSkill+=($(Rando deception persuasion));;
+	gladiator)	SpSkill+=(intimidation);;
+	hunter)		SpSkill+=(survival);;
+	racer)		SpSkill+=(driving);;
+	scavenger)	SpSkill+=(scavenger);;
+	*)	;;
+	esac
+done
+
+# Collect and apply Hangup modifiers
+for hngup in CHangUp[@] ; do
+	case ${hngup} in
+	idolizer)	((willpower=${willpower}-1));;
+	*)		;;
+	esac
+done
 
 # Randomly select characters starter skills
 Tally=0
@@ -318,19 +345,23 @@ printf "Origin: %s	Size: %s/%s\n" ${COr^} ${bsize[${BSize}]} ${asize[${ASize}]}
 printf "Role: %s (%s)\n\n" ${CRo^} ${CFoc} | sed -e 's/_/ /g'
 printf "Strength: %d\nSpeed: %d\nSmarts: %d\nSocial: %d\n" ${st} ${sp} ${sm} ${so}
 printf "Health: %d\n" ${Health}
-printf "Toughness: %d	" $(expr ${st} + 10)
-printf "Evasion: %d	" $(expr ${sp} + 10)
-printf "Willpower: %d	" $(expr ${sm} + 10)
-printf "Cleverness: %d\n" $(expr ${so} + 10)
+printf "Toughness: %d	" $(expr ${Toughness} + ${st})
+printf "Evasion: %d	" $(expr ${Evasion} + ${sp})
+printf "Willpower: %d	" $(expr ${Willpower} + ${sm})
+printf "Cleverness: %d\n" $(expr ${Cleverness} + ${so})
 printf "\nSkills:\n"
 for skill in ${Skills[@]} ; do
 	if [ ${!skill} ] ; then
 		printf "	%s: %s" ${skill} ${!skill}
-		if [ $(echo ${SpSkill[@]} | grep ${skill}) ] ; then
+		if [[ $(echo ${SpSkill[@]} | grep ${skill}) ]] ; then
 			for spsk in ${SpSkill[@]} ; do
 				if [ ${skill} == ${spsk} ] ; then echo -n '*' ; fi
 			done
 		fi
 		printf "\n"
+	else
+		if [[ $(echo ${SpSkill[@]} | grep ${skill}) ]] ; then
+			printf "	%s: *\n" ${skill}
+		fi
 	fi
 done
