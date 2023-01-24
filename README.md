@@ -6,6 +6,6 @@ Stats are randomly assigned, influences are randomly assigned, origins are rando
 
 There is a 50% chance of having more than one Influence, and a 33% chance of getting a third Influence.
 
-Skills are randomly assigned, but Specializations are limited to a 50% chance from the appropriate Role list.
+Skills are randomly assigned, but Specializations are limited to a 50% chance from the appropriate Role list and Influence perks.
 
 At this time, equipment is NOT generated.
