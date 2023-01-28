@@ -31,11 +31,14 @@ Rando() {
 
 # Tally all values of the provided list
 Tally () {
-	local v
+	local word
 	local t=0
-	for v in $@ ; do
-		if [ ${!v} ] ; then
-		  ((t += ${!v}))
+	for word in $@ ; do
+		if [[ ${word} =~ '_(reinforced)' ]] ; then
+		  word=$(echo $word | sed -e 's/_(reinforced)//')
+		fi
+		if [ ${!word} ] ; then
+		  ((t += ${!word}))
 		fi
 	done
 	printf "%d" ${t}
@@ -49,7 +52,7 @@ Tally () {
 TrorSp () {
 	local Skill=$(Rando ${@})
 	if ((RANDOM % 2)) ; then
-		if [ "${!Skill}" ] ; then
+		if [ ${!Skill} -gt 0 ] ; then
 			case ${Skill} in
 				conditioning)	((${Skill}++));;
 				initiative)	((${Skill}++));;
@@ -66,7 +69,75 @@ TrorSp () {
 ################################################################################
 # Lists and variables used to generate the characters
 ################################################################################
-Influences=(beaurocrat cube_player experiment former_senator gladiator hunter inventor machinist racer scavenger security war_veteran)
+# Standard Weapons List, available to anyone and everyone at all times.
+# This list will be expanded on as perks permit
+SWeapons=(close_combat_blade close_combat_bludgeon blaster rifle shotgun frag_grenade concussion_grenade)
+
+LWeapons=(close_combat_heavy_blade close_combat_heavy_bludgeon short_blade medium_blade medium_blade long_blade short_bludgeon long_bludgeon thrown_blade projectile_launcher projectile_launcher small_thrown_weaopn large_thrown_weapon long_range_rifle machine_gun element_jet directed_element_rifle element_grenade cover_grenade)
+
+RWeapons=(energized_close_combat_weapon heavy_machine_gun rocket_launcher grappler smart_grenade artillery_cannon missile)
+
+# Weapon objects, stored as an array.
+# [0] number of hardpoints required
+# [1] Availability
+# [2] csv of classifications
+# [3] csv of requirements
+
+# Standard Issue Weapons
+close_combat_blade=(1 standard finesse,might,sidearm,melee none)
+close_combat_bludgeon=(1 standard finesse,might,sidearm,melee none)
+blaster=(1 standard targeting,sidearm,projectile none)
+rifle=(2 standard targeting,medium,projectile none)
+shotgun=(2 standard targeting,medium,projectile none)
+frag_grenade=(1 standard athletics,sidearm,explosive none)
+concussion_grenade=(1 standard athletics,sidearm,explosive)
+
+# Limited Issue Weapons
+close_combat_heavy_blade=(1 limited finesse,might,medium,melee none)
+close_combat_heavy_bludgeon=(1 limited finesse,might,medium,melee none)
+short_blade=(1 limited finesse,might,sidearm,melee none)
+medium_blade=(1 limited finesse,might,medium,melee finesse,2)
+long_blade=(2 limited finesse,might,long,melee finesse,3)
+short_bludgeon=(1 limited finesse,might,sidearm,melee finesse,2)
+long_bludgeon=(2 limited finesse,might,long,melee finesse,3)
+thrown_blade=(1 limited targeting,sidearm,projectile finesse,2)
+projectile_launcher=(2 limited targeting,medium,projectile finesse,2)
+small_thrown_weaopn=(1 limited athletics,sidearm,projectile none)
+large_thrown_weapon=(1 limited athletics,medium,projectile brawn,2,size,3)
+long_range_rifle=(2 limited targeting,long,projectile alertness,3)
+machine_gun=(2 limited targeting,long,projectile brawn,1)
+element_jet=(2 limited targeting,medium,element none)
+directed_element_rifle=(2 limited targeting,long,element technology,1)
+element_grenade=(1 limited athletics,sidearm,element none)
+cover_grenade=(1 limited athletics,sidearm,explosive none)
+
+# Restricted Weapons
+energized_close_combat_weapon=(1 restricted finesse,might,sidearm,element none)
+heavy_machine_gun=(2 restricted targeting,long,projectile brawn,2)
+rocket_launcher=(2 restricted targeting,heavy,explosive brawn,2,size,3)
+grappler=(2 restricted athletics,finesse,long,melee athletics,1,finesse,1)
+smart_grenade=(1 restricted athletics,sidearm,explosive none)
+artillery_cannon=(2 restricted targeting,long,projectile brawn,3,size,3)
+missile=(2 restricted targeting,long,explosive brawn,3,size,3)
+
+SEquipment=(bulbar caterpillar_tread dozer_blade extra_crew_capacity ladder loader piledriver rotor_blades siren tow_cable_and_hook water_cannon)
+ECC=(cage emergency_care_equipment vehicle_repair_equipment)
+bulbar=(1 standard none internal_hardpoint)
+caterpillar_tread=(1 standard none internal_hardpoint)
+dozer_blade=(1 standard none internal_hardpoint)
+extra_crew_capacity=(1 standard none internal_hardpoint)
+ladder=(1 standard none internal_hardpoint)
+loader=(1 standard none internal_hardpoint)
+piledriver=(1 standard none internal_hardpoint)
+rotor_blades=(1 standard none internal_hardpoint)
+siren=(1 standard none internal_hardpoint)
+tow_cable_and_hook=(1 standard none internal_hardpoint)
+water_cannon=(1 standard none internal_hardpoint)
+cage=(1 standard none internal_hardpoint)
+emergency_care_equipment=(1 standard none internal_hardpoint)
+vehicle_repair_equipment=(1 standard none internal_hardpoint)
+
+Influences=(bureaucrat cube_player experiment former_senator gladiator hunter inventor machinist racer scavenger security war_veteran)
 
 HangUps=(distressed earthspoiled glacial idolizer impulsive mode_attachment skeptical subordinate treacherous vainglorious violent whimsical)
 
@@ -84,7 +155,6 @@ sm=1
 so=1
 
 Health=0
-Hardpoints=4
 
 stS=(athletics brawn conditioning intimidation might)
 spS=(acrobatics driving finesse infiltration initiative)
@@ -92,10 +162,57 @@ smS=(alertness culture science survival technology)
 soS=(animal_handling deception performance persuasion streetwise)
 Skills=(${stS[@]} ${spS[@]} ${smS[@]} ${soS[@]})
 
+athletics=0
+brawn=0
+conditioning=0
+intimidation=0
+might=0
+acrobatics=0
+driving=0
+finesse=0
+infiltration=0
+initiative=0
+alertness=0
+culture=0
+science=0
+survival=0
+technology=0
+animal_handling=0
+deception=0
+performance=0
+persuasion=0
+streetwise=0
+
+Spathletics=(climbing running sports_activity swimming athletic_weapons)
+Spbrawn=(force endurance mettle)
+Spintimidation=(distract frighten taunt)
+Spmight=(grappling martial_arts bladed_weapons bludgeoning_weapons)
+Spacrobatics=(coordination escape gymnastics)
+Spdriving=(air land sea)
+Spfinesse=(dexterity martial_arts bladed_weapons bludgeoning_weapons grappling_weapons)
+Spinfiltration=(burglary sleight_of_hand shadow stealth)
+SPtargeting=(vehicular_weapons blasters rifles shotguns thrown_blades projectile_launchers element_projectors rockets_and_missiles artillery)
+Spalertness=(insight investigation perception)
+Spculture=(history linguistics planetary psychology)
+Spscience=(medicine biology chemisrty physics zoology botany)
+Spsurvival=(foraging camping desert forest arctic jungle tundra grasslands urban tracking)
+Sptechnology=(communications computers engineering explosives repair artificial_intelligence drones mechanics robotics)
+Spanimal_handling=(calm pet training)
+Spdeception=(bluffing disguise distraction)
+Spperformance=(literary_arts performing_arts visual_arts)
+Sppersuasion=(diplomacy embellishments flattery)
+Spstreetwise=(black_market crime gossip)
+
 Toughness=10
 Evasion=10
 Willpower=10
 Cleverness=10
+
+Lang=2
+
+HardPoints=2
+RHardPoints=0
+NWHardPoints=0
 
 ################################################################################
 # The main event starts here.
@@ -128,26 +245,40 @@ fi
 # Collect and apply perks of each influence
 for inf in ${Inf[@]} ; do
 	case ${inf} in
-	former_senator)	SpSkill+=($(Rando deception persuasion));;
-	gladiator)	SpSkill+=(intimidation);;
-	hunter)		SpSkill+=(survival);;
-	racer)		SpSkill+=(driving);;
-	scavenger)	SpSkill+=(scavenger);;
-	*)	;;
+	bureaucrat)	CPerk+=(Bureaucrat_\(p.30\));;
+	cube_player)	CPerk+=(Cube_Player_\(p.31\));;
+	experiment)	case $( expr $RANDOM % 4 ) in
+			0) CPerk+=(Experiment:_1_Upshift_when_Shoving_or_Breaking_a_Grapple._\(p.32\));;
+			1) CPerk+=(Experiment:_Carrying_weight_is_doubled._\(p.32\));;
+			2) CPerk+=(Experiment:_Gain_Edge_on_Technology_skill_against_unfamiliar_technology._\(p.32\));;
+			3) CPerk+=(Experiment:_One_extra_non-weapon_hardpoint._\(p.32\))
+			   ((NWHardPoints++));;
+			esac;;
+	former_senator)	CPerk+=(Former_Senator:_Edge_on_$(Rando ${Spdeception[@]})_\(p.33\));;
+	gladiator)	CPerk+=(Gladiator:_Edge_on_$(Rando ${Spintimidation[@]})_\(p.34\));;
+	hunter)		CPerk+=(Edge_on_Survival_$(Rando ${Spsurvival[@]})_\(p.35\));;
+	inventor)	CPerk+=(Inventor_\(p.36\));;
+	machinist)	CPerk+=(Machinist_\(p.37\));;
+	racer)		CPerk+=(Racer:_Edge_on_$(Rando ${Spdriving[@]})_\(p.38\));;
+	scavenger)	CPerk+=(Scavenger:_Edge_on_$(Rando ${Spstreetwise[@]})_\(p.39\));;
+	security)	CPerk+=(Security_\(p.40\));;
+	war_veteran)	CPerk+=(War_Veteran_\(p.41\));;
+	*)		printf "Something went horribly wrong!\nUnknown Influence %s\n\n" ${inf}
+			exit 3;;
 	esac
 done
 
 # Collect and apply Hangup modifiers
-for hngup in CHangUp[@] ; do
+for hngup in ${CHangUp[@]} ; do
 	case ${hngup} in
-	idolizer)	((willpower=${willpower}-1));;
+	idolizer)	((Willpower=${Willpower}-1));;
 	*)		;;
 	esac
 done
 
 # Randomly select characters starter skills
 Tally=0
-for stat in st sp sm so ; do
+for stat in ${Essence[@]} ; do
 	Tally=$(Tally $(eval "echo \${${stat}S[@]}") )
 	while [ ${Tally} -lt ${!stat} ] ; do
 		(($(Rando $(eval "echo \${${stat}S[@]}") )++))
@@ -163,18 +294,24 @@ case ${COr} in
 	champion)	((so++))
 			(($(Rando "persuasion streetwise")++))
 			Health=3
-			BMove=40
+			CPerk+=(I_know_a_bot_\(p.48\))
+			BMove=(40)
+			BType=(ground)
 			BSize=2
-			AMove=60
+			AMove=(60)
+			AType=(ground)
 			ASize=${BSize}
 			Crew=2
-			FirePoints=2 ;;
+			Firepoints=2 ;;
 	cutter)		((st++))
 			(($(Rando "athletics might")++))
 			Health=3
-			BMove=30
+			CPerk+=(Surface_Invasion_\(p.49\))
+			BMove=(30 30)
+			BType=(ground water)
 			BSize=$(Rando "1 2")
-			AMove=45
+			AMove=(45)
+			ATYpe=(water)
 			ASize=${BSize}
 			Crew=2
 			Firepoints=2 ;;
@@ -184,58 +321,78 @@ case ${COr} in
 			else (($(Rando "deception streetwise")++)) ; fi
 			Health=2
 			((Evasion+=2))
-			BMove=30
+			CPerk+=(Look_Out\!_\(p.50\))
+			BMove=(30)
+			BType=(ground)
 			BSize=1
-			AMove=45
+			AMove=($(Rando 45 20) )
+			if [ ${AMove} -eq 45 ] ; then AType=(ground) ; else AType=(aerial) ; fi
 			ASize=${BSize}
 			Crew=1
 			Firepoints=1 ;;
 	monolith)	((st++))
 			(($(Rando "brawn might")++))
 			Health=4
-			BMove=20
+			CPerk+=(Large_and_In_Charge_\($(Rando ${soS[@]})\)_\(p.51\))
+			BMove=(20)
+			BType=(ground)
 			BSize=3
-			AMove=45
+			AMove=(45)
+			AType=(ground)
 			ASize=${BSize}
 			Crew=6
 			Firepoints=4 ;;
 	outrider)	((sm++))
 			(($(Rando "alertness survival")++))
 			Health=3
-			BMove=30
+			CPerk+=(Take_Point_\(p.52\))
+			BMove=(30)
+			BType=(ground)
 			BSize=$(Rando "1 2")
-			AMove=45
+			AMove=(45)
+			AType=(ground)
 			ASize=${BSize}
 			Crew=2
 			Firepoints=2 ;;
 	rainmaker)	((sp++))
 			(($(Rando "initiative targeting")++))
 			Health=4
-			BMove=30
+			((RHardPoints++))
+			CPerk+=(The_Fiercest_Among_You_\(p.52\))
+			BMove=(30)
+			BType=(ground)
 			BSize=2
-			AMove=45
+			AMove=(45)
+			AType=(ground)
 			ASize=${BSize}
 			Crew=2
 			Firepoints=2 ;;
 	seeker)		((sp++))
 			(($(Rando "acrobatics driving")++))
 			Health=3
-			BMove=30
+			CPerk+=(Hover_\(p.53\))
+			BMove=(30 30)
+			BType=(ground aerial)
 			BSize=2
-			AMove=60
+			AMove=(60)
+			AType=(aerial)
 			ASize=${BSize}
 			Crew=2
 			Firepoints=0 ;;
 	support)	((sm++))
 			(($(Rando "science technology")++))
 			Health=4
-			BMove=30
+			CPerk+=(In_Case_of_Emergency_\(p.54\))
+			((NWHardPoints+=2))
+			BMove=(30)
+			BType=(ground)
 			BSize=2
-			AMove=(45 30)
+			AMove=($(Rando 45 30) )
+			if [ ${AMove} -eq 45 ] ; then AType=(ground) ; else AType=(aerial) ; fi
 			ASize=2
 			Crew=2
 			Firepoints=2 ;;
-	*)		printf "Something went horribly wrong!\n"
+	*)		printf "Something went horribly wrong!\nUnknown Origin %s\n\n" ${COr}
 			exit1 ;;
 esac
 
@@ -244,36 +401,57 @@ CRo=$(Rando ${Roles[@]})
 
 # Apply Role modifiers and randomly pick from available options.
 case ${CRo} in
-	analyst)	((sp++))
+	analyst)	CPerk+=("Work_the_Numbers_(p.58)" "Analyze_Target(p.59)" "Informed_Accuracy_(p.59)" "Unsurprising_(p.59)")
+			((sp++))
 			((sm++))
 			(($(Rando "finesse infiltration initiative")++))
 			(($(Rando "alertness science technology")++))
 			CFoc=$(Rando manipulator spec_ops)
 			((so++))
-			TrorSp deception persuasion streetwise;;
-	field_commander) ((st++))
+			TrorSp deception persuasion streetwise
+			case ${CFoc} in
+				manipulator)	CPerk+=(diversion_\(p.60\));;
+				spec_ops)	CPerk+=(unassuming_\(p.61\))
+						if [ ${finesse} -gt 1 ] ; then
+							SWeapons+=(medium_blade short_bludgeon thrown_blade)
+						fi
+						if [ ${brawn} -gt 1 ] || [ ${BSize} -gt 2 ] ; then
+							SWeapons+=(large_thrown_weapon)
+						fi
+						SWeapons+=(close_combat_heavy_blade close_combat_heavy_bludgeon short_blade small_thrown_weapon element_grenade cover_grenade);;
+			esac;;
+	field_commander) CPerk+=(never_forsaken\(p.64\) issue_command\(p.64\) prepare_for_war\(p.64\))
+			((st++))
 			((so++))
 			(($(Rando "brawn intimidation might")++))
 			(($(Rando "deception performance persuasion")++))
 			CFoc=$(Rando ambassador strategist)
 			case ${CFoc} in
 				ambassador)	((so++))
-						TrorSp deception performance persuasion;;
+						TrorSp deception performance persuasion
+						CPerk+=(bend_a_knee_or_stand_tall\(p.65\));;
 				strategist)	((sm++))
-						TrorSp alertness culture survival;;
+						TrorSp alertness culture survival
+						CPerk+=(strategize\(p.66\));;
 			esac;;
-	gunner)		((sp++))
+	gunner)		CPerk+=(imprompturret\(p.68\) pistol_whip\(p.68\) rapid_reload\(p.68\))
+			((HardPoints++))
+			SWeapons+=(long_range_rifle)
+			((sp++))
 			((sm++))
 			(($(Rando initiative targeting)++))
 			(($(Rando alertness survival)++))
-			CFoc=$(Rando gunslinger shapshooter)
+			CFoc=$(Rando gunslinger sharpshooter)
 			((sp++))
 			case ${CFoc} in
-				gunslinger)	TrorSp acrobatics initiative targeting;;
-				sharshooter)	TrorSp infiltration initiative
-						CEqu+=(long_range_rifle);;
+				gunslinger)	TrorSp acrobatics initiative targeting
+						CPerk+=(quick_draw\(p.70\));;
+				sharpshooter)	TrorSp infiltration initiative
+						CEqu+=(long_range_rifle)
+						CPerk+=(long_shot\(p.70\));;
 			esac;;
-	modemaster)	E1=$(Rando st sp sm so)
+	modemaster)	CPerk+=(fully_hybrid\(p.72\) mass_shift\(p.73\))
+			E1=$(Rando st sp sm so)
 			E2=$(Rando st sp sm so)
 			while [ "${E1}" == "${E2}" ] ; do E2=$(Rando st sp sm so) ; done
 			((${E1}++))
@@ -285,41 +463,105 @@ case ${CRo} in
 			((${E1}++))
 			TrorSp $(eval "echo \${${E1}S[@]}")
 			case ${CFoc} in
-				microlinked)	;;
-				triple_changer)	CAm+=("");;
+				microlinked)	CPerk+=(quick_change_$(Rando bot_mode_to_${COr}_mode ${COr}_mode_to_bot_mode)_\(p.73\) mini-con_ally_\(p.74\));;
+				triple_changer)	if [ ${BSize} -lt 2 ] ; then
+							COrb=$(Rando $(echo ${Origins[@]} | sed -e s/${COr}// -e s/monolith//) )
+						elif [ ${BSize} -gt 2 ] ; then
+							COrb=$(Rando $(echo ${Origins[@]} | sed -e s/${COr}// -e s/lookout//) )
+						else
+							COrb=$(Rando $(echo ${Origins[@]} | sed -e s/${COr}//) )
+						fi
+						case ${COrb} in
+						  champion)	CMove=(60)
+								CType=(ground)
+								CSize=2
+								CCrew=2
+								CFirepoints=2;;
+						  cutter)	CMove=(45)
+								CType=(water)
+								if [ $BSize -gt 2 ] ; then CSize=2
+								else CSize=$(Rando 1 2); fi
+								CCrew=2
+								CFirepoints=2;;
+						  lookout)	CMove=($(Rando 45 20) )
+								if [ ${CMove[0]} -eq 45 ] ; then CType=(ground)
+								else CType=(aerial) ; fi
+								CSize=1
+								CCrew=1
+								CFirepoints=1;;
+						  monolith)	CMove=(45)
+								CType=(ground)
+								CSize=2
+								CCrew=6
+								CFirepoints=4;;
+						  outrider)	CMove=(45)
+								CType=(ground)
+								if [ $BSize -gt 2 ] ; then CSize=2
+								else CSize=$(Rando 1 2); fi
+								CCrew=2
+								CFirepoints=2;;
+						  rainmaker)	CMove=(45)
+								CType=(ground)
+								CSize=2
+								CCrew=2
+								CFirepoints=2;;
+						  seeker)	CMove=(60)
+								CType=(aerial)
+								CSize=2
+								CCrew=2
+								CFirepoints=0;;
+						  support)	CMove=($(Rando 45 30) )
+								if [ ${CMove[0]} -eq 45 ] ; then CType=(ground)
+								else CType=(aerial) ; fi
+								CSize=2
+								CCrew=2
+								CFirepoints=2;;
+						esac
+						CPerk+=(quick_change_$(Rando bot_mode_to_${COr}_mode bot_mode_to_${COrb}_mode ${COr}_mode_to_bot_mode ${COrb}_mode_to_bot_mode ${COr}_mode_to_${COrb}_mode ${COrb}_mode_to_${COr}_mode)_\(p.73\) everything_in_threes_\(p.76\))
 			esac;;
-	scientist)	((st++))
+	scientist)	CPerk+=(intrafilum_\(p.78\) broad_understanding_\(p.79\) circuit_breaker_\(p.79\) energon_pattery_\(p.79\))
+			((st++))
 			((sm++))
 			(($(Rando brawn conditioning)++))
 			(($(Rando science technology)++))
 			CFoc=$(Rando medical_officer gadgeteer)
 			((sm++))
 			case ${CFoc} in
-				medical_officer) TrorSp science technology;;
-				gadgeteer)	TrorSp technology;;
+				medical_officer) TrorSp science technology
+						CPerk+=(patch_up_\(p.80\));;
+				gadgeteer)	TrorSp technology
+						CPerk+=(technologist_\(p.81\));;
 			esac;;
-	scout)		((sp++))
+	scout)		CPerk+=(dissappear_\(p.83\) ally_awareness_\(p.84\) forward_observation_\(p.84\) keen_sensors_\(p.84_\&_p.107\))
+			((sp++))
 			((so++))
 			(($(Rando infiltration initiative)++))
 			(($(Rando alertness deception streetwise)++))
 			CFoc=$(Rando outrider prowler)
 			((sp++))
 			case ${CFoc} in
-				outrider)	TrorSp driving initiative;;
-				prowler)	TrorSp finesse infiltration targeting;;
+				outrider)	TrorSp driving initiative
+						CPerk+=(burn_rubber_\(p.86\));;
+				prowler)	TrorSp finesse infiltration targeting
+						CPerk+=(stunning_surprise_\(p.86\));;
 			esac;;
-	warrior)	((st++))
+	warrior)	CPerk+=(hardcore_\(p.88\) foot_soldier_\(p.89\) manifest_melee_weapon_\(p.89\) wisdom_through_experience_\(p.89\))
+			SWeapons+=(close_combat_heavy_blade close_combat_heavy_bludgeon short_blade medium_blade long_blade short_bludgeon long_bludgeon energized_close_combat_weapon)
+			((st++))
 			((sm++))
 			(($(Rando brawn conditioning might)++))
 			(($(Rando alertness culture survival)++))
 			CFoc=$(Rando sentinel wrecker)
 			case ${CFoc} in
 				sentinel)	((sp++))
-						TrorSp finesse initiative;;
+						TrorSp finesse initiative
+						CPerk+=(stalwart_defense_\(p.90\))
+						CEqu+=($(Rando shield\(close_combat_bludgeon\) $(Rando close_combat_blade close_combat_bludgeon short_blade short_bludgeon) ) );;
 				wrecker)	((st++))
-						TrorSp brawn conditioning might;;
+						TrorSp brawn conditioning might
+						CPerk+=(warrior_rush_\(p.91\));;
 			esac;;
-	*)		printf "Something went horribly wrong!\n"
+	*)		printf "Something went horribly wrong!\nUnknown Role: %s\n\n" ${CRo}
 			exit 1;;
 esac
 
@@ -328,6 +570,72 @@ if [ ${conditioning} ] ; then
 	((Health+=${conditioning}))
 fi
 
+# Determnine Energon available
+if [ ${CRo} == "scientist" ] ; then
+	Energon=1
+	for e in ${Essence[@]} ; do
+		if [ ${Energon} -lt ${!e} ] ; then Energon=${!e} ; fi
+	done
+else
+	Energon=20
+	for e in ${Essence[@]} ; do
+		if [ ${Energon} -gt ${!e} ] ; then Energon=${!e} ; fi
+	done
+fi
+
+
+################################################################################
+# Randomly assign Integrated Hardpoints
+################################################################################
+# Randomly assign a weapon to the last element of a Rainmaker's chassis
+if [ ${COr} == 'rainmaker' ] ; then
+	CHardPoint[((${HardPoints}+1))]="$(Rando ${SWeapons[@]})_(reinforced)"
+	RM=2
+else
+	RM=1
+fi
+
+i=0
+while (( ${i} < ${HardPoints} + ${RHardPoints} )) ; do
+	CHardPoint[${i}]=$(Rando ${SWeapons[@]} ${SEquipment[@]} $(if [[ $(echo -n "${CHardPoint[@]}" | grep extra_crew_capacity) ]] ; then echo -n ${ECC[@]} ; fi) )
+	# Remove non-weapon equipment already assigned from the list of assignable equipment
+	# This prevents illegal builds, like double-sirens
+	if [[ ${SEquipment[@]} =~ ${CHardPoint[${i}]} ]] ; then
+		SEquipment=($(echo ${SEquipment[@]} | sed -e s/${CHardPoint[${i}]}// ) )
+	fi
+	i=$(Tally ${CHardPoint[@]})
+	if (( $i > ${HardPoints} + ${RHardPoints} )) ; then
+		CHardPoint[$(expr ${#CHardPoint[@]} - ${RM})]=''
+		((i-=${RM}))
+	fi
+done
+for (( i=0 ; ${i} < ${NWHardPoints} ; i++ )) ; do
+		CnHardPoint[${i}]=$(Rando ${SEquipment[@]} $(if [[ $(echo -n "${CHardPoint[@]}" | grep extra_crew_capacity) ]] ; then echo -n ${ECC[@]} ; fi ) )
+		SEquipment=($(echo ${SEquipment[@]} | sed -e s/${CnHardPoint[${i}]}// ) )
+done
+
+for equipment in $(echo ${CHardPoint[@]} ${CnHardPoint[@]}) ; do
+	case ${equipment} in
+		extra_crew_capacity)	((Crew+=4));;
+		rotor_blades)	if [ "${AType[0]}" != "aerial" ] ; then
+					AType+=(aerial)
+					AMove+=($(expr ${AMove[0]} / 2))
+				fi;;
+	esac
+done
+
+# Determin how many languages can be had
+case ${COr} in
+	champion)	((Lang+=${so}/3));;
+	cutter)		((Lang+=${sm}/3));;
+	lookout)	((Lang+=${so}/2));;
+	monolith)	((Lang+=${sm}/3));;
+	outrider)	((Lang+=${sm}/3));;
+	rainmaker)	((Lang+=${sm}/3));;
+	seeker)		((Lang+=${sm}/3));;
+	support)	((Lang+=${sm}/3));;
+esac
+
 # Tag skills that have been specialized in
 
 # Print out the character information
@@ -335,33 +643,61 @@ printf "Influence"
 if [ ${#Inf[@]} -gt 1 ] ; then
 	printf "s:"
 	printf ", %s" ${Inf[@]^} | sed -e 's/^,//' -e 's/_/ /g'
-	printf "\nHangups:"
-	printf ", %s" ${CHangUp[@]^} | sed -e 's/^,//' -e 's/_/ /g'
+	printf "\nHangups (p.42-43):"
+	printf ", %s" ${CHangUp[@]^} | sed -e 's/^,//' -e "s/mode_attachment/mode_attachment_\($(Rando bot ${COr} ${COrb})_mode\)/" -e 's/_/ /g' 
 else
 	printf ": %s" ${Inf[@]^} | sed -e 's/_/ /g'
 fi
 printf "\n"
+if [ ${CFoc} == "triple_changer" ] ; then
+printf "Origin: %s / %s	Size: %s/%s/%s\n" ${COr^} ${COrb^} ${bsize[${BSize}]} ${asize[${ASize}]} ${asize[${CSize}]}
+else
 printf "Origin: %s	Size: %s/%s\n" ${COr^} ${bsize[${BSize}]} ${asize[${ASize}]}
+fi
 printf "Role: %s (%s)\n\n" ${CRo^} ${CFoc} | sed -e 's/_/ /g'
 printf "Strength: %d\nSpeed: %d\nSmarts: %d\nSocial: %d\n" ${st} ${sp} ${sm} ${so}
-printf "Health: %d\n" ${Health}
+printf "Health: %d	Energon: %d\n" ${Health} ${Energon}
 printf "Toughness: %d	" $(expr ${Toughness} + ${st})
 printf "Evasion: %d	" $(expr ${Evasion} + ${sp})
 printf "Willpower: %d	" $(expr ${Willpower} + ${sm})
 printf "Cleverness: %d\n" $(expr ${Cleverness} + ${so})
-printf "\nSkills:\n"
+printf "Bot Mode Move: "
+for (( i=0 ; ${i} < ${#BMove[@]} ; i++ )) ; do
+	printf "%dft %s " ${BMove[${i}]} ${BType[${i}]}
+done
+printf "	%s Mode Move: " ${COr^}
+for (( i=0 ; ${i} < ${#AMove[@]} ; i++ )) ; do
+	printf "%dft %s " ${AMove[${i}]} ${AType[${i}]}
+done
+if [[ ${COrb} ]] ; then
+	printf "\n%s Mode Move: %dft %s" ${COrb^} ${CMove} ${CType}
+fi
+printf "\n Crew: %d	Fire Points: %d\n" ${Crew} ${Firepoints}
+if [[ ${COrb} ]] ; then
+	printf "Alt-crew: %d	Alt-Fire Points: %d\n" ${CCrew} ${CFirepoints}
+fi
+printf "\nInternal Hardpoints:\n"
+printf "	%s\n" $(echo -n "${CHardPoint[@]} ${CnHardPoint[@]}") | sed -e 's/_/ /g'
+if [ ${#CEqu[@]} -gt 0 ] ; then
+	printf "\nPersonal Equipment:\n"
+	printf "	%s\n" ${CEqu[@]} | sed 's/_/ /g'
+fi
+printf "\nSkills:	"
 for skill in ${Skills[@]} ; do
-	if [ ${!skill} ] ; then
-		printf "	%s: %s" ${skill} ${!skill}
+	if [ ${!skill} -gt 0 ] ; then
+		printf "%s: %s" ${skill} ${!skill}
 		if [[ $(echo ${SpSkill[@]} | grep ${skill}) ]] ; then
 			for spsk in ${SpSkill[@]} ; do
 				if [ ${skill} == ${spsk} ] ; then echo -n '*' ; fi
 			done
 		fi
-		printf "\n"
+		printf "\n	"
 	else
 		if [[ $(echo ${SpSkill[@]} | grep ${skill}) ]] ; then
-			printf "	%s: *\n" ${skill}
+			printf "%s: *\n	" ${skill}
 		fi
 	fi
 done
+printf "\nPerks:	"
+printf "%s\n	" ${CPerk[@]} | sed -e 's/_/ /g'
+printf "\n"
