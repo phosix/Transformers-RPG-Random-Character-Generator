@@ -8,4 +8,9 @@ There is a 50% chance of having more than one Influence, and a 33% chance of get
 
 Skills are randomly assigned, but Specializations are limited to a 50% chance from the appropriate Role list and Influence perks.
 
-At this time, equipment is NOT generated.
+Internal Hardpoints are randomly assigned.
+* Standard and Non-Weapon Internal Hardpoints can both be assigned non-weapon equipment
+* Reinforced hardpoints only get assigned appropriate weapons
+
+External Hardpoint (carried) equipment gaind as part of a perk are tracked and listed.
+The remaining External Hardpoint gear is not yet generated. 
